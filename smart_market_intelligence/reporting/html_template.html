@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Smart Market Intelligence - {{ report_date }}</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 24px; color: #1f2937; }
+    h1, h2 { color: #111827; }
+    .card { border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border: 1px solid #d1d5db; padding: 8px; text-align: left; }
+    th { background: #f3f4f6; }
+  </style>
+</head>
+<body>
+  <h1>Relatório Diário - Smart Market Intelligence</h1>
+  <p><strong>Data:</strong> {{ report_date }}</p>
+
+  <h2>Parte 1 — Resumo Executivo</h2>
+  <div class="card">
+    <p><strong>Ambiente do dia:</strong> {{ executive.environment }}</p>
+    <p><strong>Estado de notícias:</strong> {{ executive.news_state }}</p>
+  </div>
+
+  <div class="card">
+    <h3>Ranking Macro</h3>
+    <table>
+      <tr><th>Moeda</th><th>Força Macro</th></tr>
+      {% for ccy, score in executive.macro_ranking %}
+      <tr><td>{{ ccy }}</td><td>{{ score }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Ranking Micro</h3>
+    <table>
+      <tr><th>Par</th><th>Força Micro</th></tr>
+      {% for pair, score in executive.micro_ranking %}
+      <tr><td>{{ pair }}</td><td>{{ score }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <div class="card">
+    <h3>Watchlist por sessão</h3>
+    <table>
+      <tr><th>Par</th><th>Sessão</th><th>Direção</th><th>Score</th></tr>
+      {% for row in executive.watchlist %}
+      <tr><td>{{ row.pair }}</td><td>{{ row.session }}</td><td>{{ row.direction }}</td><td>{{ row.priority_score }}</td></tr>
+      {% endfor %}
+    </table>
+  </div>
+
+  <h2>Parte 2 — Análise Técnica</h2>
+  {% for item in technical %}
+  <div class="card">
+    <h3>{{ item.pair }}</h3>
+    <p><strong>Contexto W1/D1:</strong> {{ item.context }}</p>
+    <p><strong>Estrutura H4:</strong> {{ item.structure }}</p>
+    <p><strong>MSS validado:</strong> {{ item.mss }}</p>
+    <p><strong>PD Array:</strong> {{ item.pd }}</p>
+    <p><strong>Score Setup:</strong> {{ item.setup_score }}</p>
+    <p><strong>Conclusão:</strong> {{ item.conclusion }}</p>
+  </div>
+  {% endfor %}
+</body>
+</html>

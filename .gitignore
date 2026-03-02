@@ -1,0 +1,4 @@
+__pycache__/
+*.pyc
+smart_market_intelligence/reports/*
+!smart_market_intelligence/reports/.gitkeep
