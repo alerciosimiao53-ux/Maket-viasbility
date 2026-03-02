@@ -1,4 +1,6 @@
 __pycache__/
 *.pyc
+reports/*
+!reports/.gitkeep
 smart_market_intelligence/reports/*
 !smart_market_intelligence/reports/.gitkeep
