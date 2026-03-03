@@ -1,0 +1,15 @@
+{
+  "runtime": {"seed": 42},
+  "instruments": {
+    "currencies": ["USD", "EUR", "GBP", "JPY", "XAU"],
+    "pairs": ["EURUSD", "GBPUSD", "USDJPY", "XAUUSD"]
+  },
+  "strategy": {
+    "swing_fractal": 2,
+    "mss_min_candle_atr": 1.5,
+    "mss_min_body_ratio": 0.7,
+    "fvg_min_gap_atr": 0.2
+  },
+  "micro": {"min_atr_relative": 0.002},
+  "news": {"lock_before_minutes": 30, "cooldown_after_minutes": 10}
+}
