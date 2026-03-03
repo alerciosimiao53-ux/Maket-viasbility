@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Daily Market Intelligence Report - {{report_date}}</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card: #ffffff;
+      --text: #1f2937;
+      --muted: #6b7280;
+      --line: #e5e7eb;
+      --good: #22c55e;
+      --warn: #f59e0b;
+      --risk: #ef4444;
+      --neutral: #9ca3af;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; }
+    .container { max-width: 1200px; margin: 0 auto; padding: 16px; }
+    .header {
+      position: sticky; top: 0; z-index: 10; background: rgba(245, 247, 250, 0.96);
+      backdrop-filter: blur(4px); padding: 12px 0 8px; margin-bottom: 8px;
+    }
+    .header-box { background: var(--card); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 4px 16px rgba(0,0,0,0.06); padding: 16px; }
+    .title { margin: 0; font-size: 1.4rem; }
+    .sub { margin: 6px 0 0; color: var(--muted); }
+    .badges { margin-top: 10px; display: flex; flex-wrap: wrap; gap: 8px; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 999px; font-size: .82rem; font-weight: 600; color: #fff; }
+    .badge.good { background: var(--good); }
+    .badge.warn { background: var(--warn); }
+    .badge.risk { background: var(--risk); }
+    .badge.neutral { background: var(--neutral); }
+
+    .section-title { margin: 18px 0 10px; font-size: 1.05rem; }
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); padding: 14px; }
+    .card h3 { margin: 0 0 10px; font-size: .98rem; }
+    .small { color: var(--muted); font-size: .85rem; }
+
+    .bar-wrap { margin: 8px 0; }
+    .bar-label { display: flex; justify-content: space-between; font-size: .82rem; margin-bottom: 5px; }
+    .bar { width: 100%; background: #eef2f7; border-radius: 999px; height: 9px; overflow: hidden; }
+    .bar-fill { height: 100%; border-radius: 999px; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th, td { border-bottom: 1px solid var(--line); padding: 10px 8px; text-align: left; font-size: .9rem; }
+    th { color: var(--muted); font-weight: 600; }
+
+    details { background: var(--card); border: 1px solid var(--line); border-radius: 12px; margin-bottom: 10px; box-shadow: 0 4px 14px rgba(0,0,0,0.05); }
+    summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; gap: 8px; padding: 14px; font-weight: 600; }
+    details[open] summary { border-bottom: 1px solid var(--line); }
+    .detail-body { padding: 14px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .metric { background: #fafcff; border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+    .metric .k { color: var(--muted); font-size: .78rem; }
+    .metric .v { margin-top: 4px; font-weight: 600; }
+    .score-badge { font-size: .78rem; padding: 5px 9px; border-radius: 999px; color: #fff; }
+
+    .chart-placeholder { margin-top: 8px; height: 110px; border: 1px dashed #d1d5db; border-radius: 8px; display: grid; place-items: center; color: var(--muted); font-size: .84rem; }
+
+    @media (max-width: 1024px) {
+      .grid-4 { grid-template-columns: repeat(2, 1fr); }
+      .detail-body { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .grid-4 { grid-template-columns: 1fr; }
+      .detail-body { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container header">
+    <div class="header-box">
+      <h1 class="title">Daily Market Intelligence Report</h1>
+      <p class="sub">Date: {{report_date}}</p>
+      <div class="badges">{{header_badges}}</div>
+    </div>
+  </div>
+
+  <main class="container">
+    <h2 class="section-title">Executive Summary</h2>
+    <section class="grid-4">
+      <article class="card">
+        <h3>1) Macro Bias</h3>
+        <div class="small">Strong vs weak currencies</div>
+        {{macro_bias_bars}}
+      </article>
+      <article class="card">
+        <h3>2) Micro Regime</h3>
+        <div class="small">Dominant market structure by pair</div>
+        {{micro_regime_list}}
+      </article>
+      <article class="card">
+        <h3>3) News Risk</h3>
+        <div class="small">High-impact events countdown</div>
+        {{news_risk_list}}
+      </article>
+      <article class="card">
+        <h3>4) Watchlist of the Day</h3>
+        <div class="small">Prioritized pairs + bias</div>
+        {{watchlist_list}}
+      </article>
+    </section>
+
+    <h2 class="section-title">Ranking Tables</h2>
+    <section class="grid-4" style="grid-template-columns: 1fr 1fr;">
+      <article class="card">{{macro_table}}</article>
+      <article class="card">{{pairs_table}}</article>
+    </section>
+
+    <h2 class="section-title">Detailed Technical Analysis</h2>
+    <section>
+      {{technical_accordion}}
+    </section>
+  </main>
+</body>
+</html>
