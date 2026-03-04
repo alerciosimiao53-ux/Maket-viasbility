@@ -1,0 +1,1 @@
+# Projeto funcional com bibliotecas padrão do Python (sem dependências externas obrigatórias).
