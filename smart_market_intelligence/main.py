@@ -34,9 +34,13 @@ def run(report_date: str | None = None) -> str:
     news_provider = NewsProvider()
 
     events = news_provider.get_events()
+
+    # Ticker (para a barra rolando no dashboard)
     ticker_provider = build_ticker_provider()
     ticker_symbols = ticker_provider.get_ticker_symbols()
     ticker_quotes = ticker_provider.fetch_quotes(ticker_symbols)
+    ticker_last_update = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
+
     macro_strength = calculate_macro_score(events)
     news_state = evaluate_news_block(events, watched_currencies)
 
@@ -123,7 +127,7 @@ def run(report_date: str | None = None) -> str:
         news_events=events,
         technical_details=technical_details,
         ticker_quotes=ticker_quotes,
-        ticker_last_update=datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+        ticker_last_update=ticker_last_update,
     )
 
     report_path = build_report(payload, output_root="reports", report_date=_resolve_date(report_date))
