@@ -7,6 +7,7 @@ from typing import Dict, List
 from smart_market_intelligence.data_providers.news_provider import NewsProvider
 from smart_market_intelligence.data_providers.price_provider import PriceProvider
 from smart_market_intelligence.macro_engine.macro_score import calculate_macro_score
+from smart_market_intelligence.market_data.ticker_provider import build_ticker_provider
 from smart_market_intelligence.macro_engine.news_filter import evaluate_news_block
 from smart_market_intelligence.micro_engine.micro_score import calculate_micro_score
 from smart_market_intelligence.reporting.report_builder import build_report, build_report_payload
@@ -33,6 +34,13 @@ def run(report_date: str | None = None) -> str:
     news_provider = NewsProvider()
 
     events = news_provider.get_events()
+
+    # Ticker (para a barra rolando no dashboard)
+    ticker_provider = build_ticker_provider()
+    ticker_symbols = ticker_provider.get_ticker_symbols()
+    ticker_quotes = ticker_provider.fetch_quotes(ticker_symbols)
+    ticker_last_update = datetime.now(timezone.utc).strftime("%H:%M:%S UTC")
+
     macro_strength = calculate_macro_score(events)
     news_state = evaluate_news_block(events, watched_currencies)
 
@@ -118,6 +126,8 @@ def run(report_date: str | None = None) -> str:
         watchlist=watchlist,
         news_events=events,
         technical_details=technical_details,
+        ticker_quotes=ticker_quotes,
+        ticker_last_update=ticker_last_update,
     )
 
     report_path = build_report(payload, output_root="reports", report_date=_resolve_date(report_date))

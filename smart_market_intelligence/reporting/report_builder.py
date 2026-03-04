@@ -31,7 +31,7 @@ def _setup_badge(score: int) -> str:
 
 
 def _risk_level(news_events: List[Dict]) -> str:
-    high_count = len([e for e in news_events if e.get("impact") == "high"])
+    high_count = len([e for e in news_events if (e.get("impact") or "").lower() == "high"])
     if high_count >= 3:
         return "High"
     if high_count >= 1:
@@ -68,7 +68,38 @@ def _heat_color(score: float) -> str:
         return "#15803d"  # green
     if score <= -30:
         return "#991b1b"  # dark red
-    return "#b45309"      # amber
+    return "#b45309"  # amber
+
+
+def _ticker_item_html(row: Dict) -> str:
+    """
+    Row esperado:
+      {"symbol": "...", "name": "...", "price": 0.0, "change": 0.0, "change_pct": 0.0, "currency": "..."}
+    """
+    pct = row.get("change_pct")
+    change = row.get("change")
+
+    if pct is None:
+        color = "#9ca3af"
+        pct_txt = "—"
+    elif float(pct) > 0:
+        color = "#22c55e"
+        pct_txt = f"+{float(pct):.2f}%"
+    elif float(pct) < 0:
+        color = "#ef4444"
+        pct_txt = f"{float(pct):.2f}%"
+    else:
+        color = "#9ca3af"
+        pct_txt = "0.00%"
+
+    change_txt = "—" if change is None else (f"+{float(change):.2f}" if float(change) > 0 else f"{float(change):.2f}")
+    price_txt = "—" if row.get("price") is None else f"{float(row['price']):,.2f}"
+    name = _safe(row.get("name"))
+    sym = _safe(row.get("symbol"))
+    return (
+        f"<span class='ticker-item'><b>{name}/{sym}</b>"
+        f"<span>{price_txt}</span><span style='color:{color}'>{change_txt} ({pct_txt})</span></span>"
+    )
 
 
 def build_report(report_data: Dict, output_root: str = "reports", report_date: str | None = None) -> Path:
@@ -76,10 +107,16 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
         report_date = datetime.now(timezone.utc).strftime("%Y-%m-%d")
 
     report_dir = ensure_dir(Path(output_root) / report_date)
-    output_path = report_dir / "report.html"
+    report_path = report_dir / "report.html"
+    dashboard_path = report_dir / "dashboard.html"
+    index_path = report_dir / "index.html"
 
-    template_path = Path("smart_market_intelligence/reporting/html_template.html")
-    template_str = template_path.read_text(encoding="utf-8")
+    # Templates separados
+    report_template_path = Path("smart_market_intelligence/reporting/html_template.html")
+    dashboard_template_path = Path("smart_market_intelligence/reporting/dashboard_template.html")
+
+    report_template = report_template_path.read_text(encoding="utf-8")
+    dashboard_template = dashboard_template_path.read_text(encoding="utf-8")
 
     session = _safe(report_data.get("session"))
     regime = _safe(report_data.get("regime"))
@@ -94,8 +131,8 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
         f"<span class='badge {risk_class}'>News Risk: {news_risk}</span>"
     )
 
+    # Macro
     macro_sorted = sorted((report_data.get("macro_strength") or {}).items(), key=lambda x: x[1], reverse=True)
-
     macro_rows = "".join(
         f"<tr><td>{_safe(ccy)}</td><td>{float(score):.2f}</td><td>{_status_from_score(float(score))}</td></tr>"
         for ccy, score in macro_sorted
@@ -112,7 +149,13 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
         for ccy, score in macro_sorted[:8]
     ) or "—"
 
+    # Watchlist + Pairs table
     watchlist = report_data.get("watchlist") or []
+
+    watchlist_list = "".join(
+        f"<p><b>{_safe(row.get('pair'))}</b> · {_safe(str(row.get('direction','—')).upper())} · score {_safe(row.get('priority_score'))}</p>"
+        for row in watchlist[:10]
+    ) or "—"
 
     pairs_rows = ""
     for row in watchlist:
@@ -130,6 +173,7 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
         f"<tbody>{pairs_rows}</tbody></table>"
     )
 
+    # News timeline (prioriza high impact, senão mostra normal)
     events = report_data.get("news_events") or []
     high_events = [e for e in events if (e.get("impact") or "").lower() == "high"]
     if not high_events:
@@ -148,6 +192,7 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
         )
     news_timeline = news_timeline or "<div class='event'>—</div>"
 
+    # Theme chips
     theme_set: List[str] = []
     for event in events:
         for tag in event.get("tags") or []:
@@ -157,14 +202,9 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
     for fallback in ["inflation", "jobs", "rates", "growth"]:
         if fallback not in theme_set:
             theme_set.append(fallback)
-
     theme_chips = "".join(f"<span class='chip'>{t}</span>" for t in theme_set[:6])
 
-    watchlist_list = "".join(
-        f"<p><b>{_safe(row.get('pair'))}</b> · {_safe(str(row.get('direction','—')).upper())} · score {_safe(row.get('priority_score'))}</p>"
-        for row in watchlist[:8]
-    ) or "—"
-
+    # KPI strip
     total_pairs = len(watchlist)
     avg_setup = int(sum((row.get("setup_score") or 0) for row in watchlist) / total_pairs) if total_pairs else 0
     macro_leader = macro_sorted[0][0] if macro_sorted else "—"
@@ -177,6 +217,7 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
         f"<div class='kpi'><div class='label'>High Impact Events</div><div class='value'>{high_impact_count}</div></div>"
     )
 
+    # Technical accordion
     tech_blocks = ""
     for detail in report_data.get("technical_details") or []:
         score_final = int(detail.get("score_final") or 0)
@@ -202,8 +243,17 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
         """
     tech_blocks = tech_blocks or "<div class='card'>—</div>"
 
-    html = _render_template(
-        template_str,
+    # Ticker (para dashboard)
+    ticker_quotes = report_data.get("ticker_quotes") or []
+    ticker_items = "".join(_ticker_item_html(row) for row in ticker_quotes) or "<span class='ticker-item'>No ticker data</span>"
+    ticker_last_update = _safe(
+        report_data.get("ticker_last_update"),
+        datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
+    )
+
+    # Render Report (report.html)
+    report_html = _render_template(
+        report_template,
         {
             "report_date": _safe(report_date),
             "header_badges": header_badges,
@@ -218,8 +268,30 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
         },
     )
 
-    output_path.write_text(html, encoding="utf-8")
-    return output_path
+    # Render Dashboard (dashboard.html)
+    dashboard_html = _render_template(
+        dashboard_template,
+        {
+            "report_date": _safe(report_date),
+            "header_badges": header_badges,
+            "ticker_items": ticker_items,
+            "ticker_last_update": ticker_last_update,
+            "kpi_strip": kpi_strip,
+            "macro_table": macro_table,
+            "pairs_table": pairs_table,
+            "news_timeline": news_timeline,
+            "technical_accordion": tech_blocks,
+            "watchlist_list": watchlist_list,
+            "theme_chips": theme_chips,
+        },
+    )
+
+    dashboard_path.write_text(dashboard_html, encoding="utf-8")
+    report_path.write_text(report_html, encoding="utf-8")
+    index_path.write_text("<meta http-equiv='refresh' content='0; url=dashboard.html' />", encoding="utf-8")
+
+    # retorna o report_path para manter compatibilidade com logs antigos
+    return report_path
 
 
 def build_report_payload(
@@ -231,6 +303,8 @@ def build_report_payload(
     watchlist: List[Dict],
     news_events: List[Dict],
     technical_details: List[Dict],
+    ticker_quotes: List[Dict] | None = None,
+    ticker_last_update: str | None = None,
 ) -> Dict:
     return {
         "report_date": report_date,
@@ -242,4 +316,6 @@ def build_report_payload(
         "watchlist": watchlist,
         "news_events": news_events,
         "technical_details": technical_details,
+        "ticker_quotes": ticker_quotes or [],
+        "ticker_last_update": ticker_last_update or datetime.now(timezone.utc).strftime("%H:%M:%S UTC"),
     }
