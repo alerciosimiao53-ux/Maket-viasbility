@@ -63,12 +63,12 @@ def _impact_badge(impact: str) -> str:
 
 def _heat_color(score: float) -> str:
     if score >= 30:
-        return "#166534"
+        return "#166534"  # dark green
     if score >= 0:
-        return "#15803d"
+        return "#15803d"  # green
     if score <= -30:
-        return "#991b1b"
-    return "#b45309"
+        return "#991b1b"  # dark red
+    return "#b45309"      # amber
 
 
 def build_report(report_data: Dict, output_root: str = "reports", report_date: str | None = None) -> Path:
@@ -95,36 +95,45 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
     )
 
     macro_sorted = sorted((report_data.get("macro_strength") or {}).items(), key=lambda x: x[1], reverse=True)
+
     macro_rows = "".join(
         f"<tr><td>{_safe(ccy)}</td><td>{float(score):.2f}</td><td>{_status_from_score(float(score))}</td></tr>"
         for ccy, score in macro_sorted
     ) or "<tr><td colspan='3'>—</td></tr>"
+
     macro_table = (
         "<table><thead><tr><th>Moeda</th><th>Score</th><th>Status</th></tr></thead>"
         f"<tbody>{macro_rows}</tbody></table>"
     )
 
     macro_heatmap = "".join(
-        f"<p><b>{_safe(ccy)}</b> <span class='heat-cell' style='background:{_heat_color(float(score))}'>{float(score):.1f}</span></p>"
+        f"<p><b>{_safe(ccy)}</b> "
+        f"<span class='heat-cell' style='background:{_heat_color(float(score))}'>{float(score):.1f}</span></p>"
         for ccy, score in macro_sorted[:8]
     ) or "—"
 
     watchlist = report_data.get("watchlist") or []
+
     pairs_rows = ""
     for row in watchlist:
         pairs_rows += (
-            f"<tr><td>{_safe(row.get('pair'))}</td><td>{_safe(row.get('structure_h4'))}</td><td>{_safe(row.get('regime'))}</td>"
-            f"<td>{'Yes' if row.get('micro_aligned') else 'No'}</td><td>{_safe(str(row.get('direction', '—')).upper())}</td></tr>"
+            f"<tr><td>{_safe(row.get('pair'))}</td>"
+            f"<td>{_safe(row.get('structure_h4'))}</td>"
+            f"<td>{_safe(row.get('regime'))}</td>"
+            f"<td>{'Yes' if row.get('micro_aligned') else 'No'}</td>"
+            f"<td>{_safe(str(row.get('direction', '—')).upper())}</td></tr>"
         )
     pairs_rows = pairs_rows or "<tr><td colspan='5'>—</td></tr>"
+
     pairs_table = (
         "<table><thead><tr><th>Par ▲</th><th>Estrutura H4</th><th>Regime</th><th>Setup Friendly</th><th>Bias</th></tr></thead>"
         f"<tbody>{pairs_rows}</tbody></table>"
     )
 
-    high_events = [e for e in (report_data.get("news_events") or []) if e.get("impact") == "high"]
+    events = report_data.get("news_events") or []
+    high_events = [e for e in events if (e.get("impact") or "").lower() == "high"]
     if not high_events:
-        high_events = report_data.get("news_events") or []
+        high_events = events
 
     news_timeline = ""
     for ev in high_events[:12]:
@@ -139,8 +148,8 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
         )
     news_timeline = news_timeline or "<div class='event'>—</div>"
 
-    theme_set = []
-    for event in report_data.get("news_events") or []:
+    theme_set: List[str] = []
+    for event in events:
         for tag in event.get("tags") or []:
             t = str(tag).lower()
             if t in {"inflation", "jobs", "rates", "growth"} and t not in theme_set:
@@ -148,6 +157,7 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
     for fallback in ["inflation", "jobs", "rates", "growth"]:
         if fallback not in theme_set:
             theme_set.append(fallback)
+
     theme_chips = "".join(f"<span class='chip'>{t}</span>" for t in theme_set[:6])
 
     watchlist_list = "".join(
@@ -158,7 +168,7 @@ def build_report(report_data: Dict, output_root: str = "reports", report_date: s
     total_pairs = len(watchlist)
     avg_setup = int(sum((row.get("setup_score") or 0) for row in watchlist) / total_pairs) if total_pairs else 0
     macro_leader = macro_sorted[0][0] if macro_sorted else "—"
-    high_impact_count = len([e for e in (report_data.get("news_events") or []) if e.get("impact") == "high"])
+    high_impact_count = len([e for e in events if (e.get("impact") or "").lower() == "high"])
 
     kpi_strip = (
         f"<div class='kpi'><div class='label'>Pairs Tracked</div><div class='value'>{total_pairs}</div></div>"

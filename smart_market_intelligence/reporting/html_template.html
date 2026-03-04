@@ -4,6 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Daily Market Intelligence Report - {{report_date}}</title>
+
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
 
@@ -199,18 +200,22 @@
   <div class="layout">
     <aside class="sidebar">
       <p class="brand">SMART MARKET INTELLIGENCE</p>
+
       <div class="side-card">
         <div class="side-title">Watchlist</div>
         {{watchlist_list}}
       </div>
+
       <div class="side-card">
         <div class="side-title">Macro Heatmap</div>
         {{macro_heatmap}}
       </div>
+
       <div class="side-card">
         <div class="side-title">Tags</div>
         <div class="chip-wrap">{{theme_chips}}</div>
       </div>
+
       <div class="side-card legend">
         <b>Legenda</b><br/>
         Score final: 80+ = setup elite, 60–79 = setup válido, &lt;60 = aguardar.<br/>
